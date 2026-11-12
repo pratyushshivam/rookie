@@ -1,0 +1,22 @@
+{
+  "name": "rookie",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Draw a race track. Fifty cars learn to drive it in front of you. Then race the one you trained.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite --port 5240",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 5241",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}
