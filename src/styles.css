@@ -1,0 +1,957 @@
+@font-face {
+  font-family: "Geist";
+  src: url("./fonts/geist.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --paper: #f2eee5;
+  --sheet: #f8f5ee;
+  --ink: #15140f;
+  --ink-soft: rgba(21, 20, 15, 0.62);
+  --ink-faint: rgba(21, 20, 15, 0.4);
+  --rule: rgba(21, 20, 15, 0.18);
+  --accent: #d4491a;
+  --you: #2a5c8f;
+  --gutter: clamp(14px, 2.4vw, 32px);
+  --side: clamp(300px, 27vw, 380px);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+p,
+h1,
+h2,
+h3,
+figure,
+dl,
+dd {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+a {
+  color: inherit;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+/* ---------- the page: a sheet of paper and a column beside it ---------- */
+
+.layout {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--side);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: "sheet bar" "sheet side";
+  pointer-events: none;
+}
+
+.bar {
+  grid-area: bar;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(var(--gutter) + var(--safe-top)) var(--gutter) 0 0;
+  pointer-events: auto;
+}
+
+.wordmark {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.wordmark::after,
+.title::after {
+  content: "";
+  display: inline-block;
+  width: 0.2em;
+  height: 0.2em;
+  margin-left: 0.07em;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+body[data-phase="draw"] .wordmark,
+body[data-phase="visit"] .wordmark {
+  visibility: hidden;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  margin-right: -9px;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+}
+
+.icon-btn .cross {
+  display: none;
+}
+
+.icon-btn[aria-pressed="true"] .waves {
+  display: none;
+}
+
+.icon-btn[aria-pressed="true"] .cross {
+  display: inline;
+}
+
+/* The canvas reads this box and draws the paper inside it; the box itself is never painted. */
+.sheet {
+  grid-area: sheet;
+  position: relative;
+  margin: calc(var(--gutter) + var(--safe-top)) var(--gutter) calc(var(--gutter) + var(--safe-bottom));
+  min-width: 0;
+  min-height: 0;
+}
+
+.side {
+  grid-area: side;
+  min-height: 0;
+  padding: 0 var(--gutter) calc(var(--gutter) + var(--safe-bottom)) 0;
+  pointer-events: auto;
+}
+
+.pane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 2.2vh, 22px);
+  padding-top: clamp(10px, 3vh, 28px);
+}
+
+.label {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.title {
+  font-size: clamp(54px, 6.2vw, 88px);
+  font-weight: 600;
+  line-height: 0.9;
+  letter-spacing: -0.055em;
+  white-space: nowrap;
+}
+
+.lede {
+  padding-top: 16px;
+  border-top: 1px solid var(--ink);
+  font-size: clamp(16px, 1.35vw, 19px);
+  line-height: 1.36;
+  letter-spacing: -0.008em;
+  max-width: 22em;
+}
+
+.picks {
+  margin-top: auto;
+}
+
+.pick-row {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pick {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  text-align: left;
+}
+
+.pick svg {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid var(--rule);
+  background: var(--sheet);
+  transition: border-color 0.15s;
+}
+
+.pick:hover svg,
+.pick:focus-visible svg {
+  border-color: var(--ink);
+}
+
+.pick:hover {
+  color: var(--ink);
+}
+
+.credit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.link {
+  font-size: 13px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-align: left;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+
+/* ---------- learning ---------- */
+
+.gen-number {
+  font-size: clamp(64px, 7vw, 104px);
+  font-weight: 600;
+  line-height: 0.92;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+}
+
+.gen-number .of {
+  font-size: 0.42em;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--ink-faint);
+  margin-left: 0.1em;
+}
+
+.gen-status {
+  margin-top: 8px;
+  min-height: 1.45em;
+  font-size: 14px;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.gen-status b {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.fig {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+  min-height: 0;
+}
+
+.fig canvas {
+  display: block;
+  width: 100%;
+}
+
+.fig-chart canvas {
+  height: clamp(64px, 12vh, 112px);
+}
+
+.fig-brain {
+  flex: 1 1 0;
+}
+
+.fig-brain canvas {
+  flex: 1 1 0;
+  min-height: 90px;
+  max-height: 230px;
+  height: 0;
+}
+
+.fig figcaption {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+
+.speed {
+  display: flex;
+  gap: 22px;
+  align-items: baseline;
+}
+
+.speed::before {
+  content: "Speed";
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-right: auto;
+}
+
+.speed button {
+  padding: 4px 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-faint);
+  border-bottom: 1.5px solid transparent;
+  font-variant-numeric: tabular-nums;
+}
+
+.speed button[aria-pressed="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+.btn {
+  display: block;
+  width: 100%;
+  padding: 14px 18px;
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  text-align: center;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.08s;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  background: transparent;
+  border-color: var(--rule);
+  color: var(--ink-faint);
+  cursor: default;
+}
+
+.btn.ready {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fffdf8;
+}
+
+.btn-quiet {
+  background: transparent;
+  color: var(--ink);
+}
+
+.stack {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ---------- on the sheet ---------- */
+
+.prompt,
+.count,
+.toast {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  pointer-events: none;
+}
+
+.prompt {
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: clamp(26px, 4.2vw, 50px);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  transition: opacity 0.35s;
+}
+
+.prompt.quiet {
+  opacity: 0;
+}
+
+.prompt.hint {
+  color: var(--accent);
+}
+
+.count {
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: clamp(90px, 22vw, 220px);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+}
+
+.count.go {
+  color: var(--accent);
+}
+
+.toast {
+  top: clamp(12px, 3vh, 26px);
+  font-size: clamp(17px, 2vw, 24px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  animation: toast 3.6s both;
+}
+
+.toast b {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+@keyframes toast {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  8%,
+  82% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.minimap {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  width: clamp(84px, 13vw, 132px);
+  height: clamp(84px, 13vw, 132px);
+  pointer-events: none;
+}
+
+.steer {
+  position: absolute;
+  inset: auto 0 14px 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 14px;
+  pointer-events: none;
+  transition: opacity 0.6s;
+}
+
+.steer.quiet {
+  opacity: 0.22;
+}
+
+.steer-key {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+  background: rgba(248, 245, 238, 0.8);
+  transition: background 0.08s, color 0.08s;
+}
+
+.steer-key.down {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ---------- race ---------- */
+
+.times {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.times th,
+.times td {
+  padding: 9px 0;
+  border-top: 1px solid var(--rule);
+  text-align: right;
+  font-weight: 400;
+}
+
+.times thead th {
+  border-top: 0;
+  padding-top: 0;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.times th:first-child {
+  text-align: left;
+  font-weight: 500;
+}
+
+.times i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 8px;
+  border-radius: 2px;
+  background: var(--you);
+}
+
+.times .row-rookie i {
+  background: var(--accent);
+}
+
+.times td.best {
+  font-weight: 600;
+}
+
+.help {
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  max-width: 26em;
+}
+
+.help kbd {
+  font: inherit;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.pane-race .links {
+  margin-top: auto;
+}
+
+/* ---------- result card and the explanation ---------- */
+
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: var(--gutter);
+  background: rgba(242, 238, 229, 0.82);
+  animation: veil 0.3s both;
+  overflow: auto;
+}
+
+@keyframes veil {
+  from {
+    opacity: 0;
+  }
+}
+
+.card {
+  width: min(430px, 100%);
+  padding: clamp(22px, 4vw, 34px);
+  background: var(--sheet);
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: rise 0.4s 0.05s both cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+.card-head {
+  margin-top: 6px;
+  font-size: clamp(34px, 7vw, 50px);
+  font-weight: 600;
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+}
+
+.card-sub {
+  margin-top: 6px;
+  font-size: 15.5px;
+  color: var(--ink-soft);
+}
+
+.card-stats {
+  margin: 18px 0 20px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.card-stats div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-top: 1px solid var(--rule);
+  font-size: 14.5px;
+}
+
+.card-stats dt {
+  color: var(--ink-soft);
+}
+
+.card-stats dd {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.card-stats dd small {
+  font-size: inherit;
+  font-weight: 500;
+  color: var(--accent);
+  margin-left: 8px;
+}
+
+.card-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.how {
+  position: relative;
+  width: min(680px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  padding: clamp(22px, 4vw, 40px);
+  background: var(--sheet);
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+  user-select: text;
+  -webkit-user-select: text;
+  animation: rise 0.4s 0.05s both cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.how:focus {
+  outline: none;
+}
+
+.how-close {
+  position: absolute;
+  top: 12px;
+  right: 20px;
+}
+
+.how h2 {
+  font-size: clamp(30px, 5vw, 44px);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.how-lede {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ink);
+  font-size: 16.5px;
+  line-height: 1.42;
+  max-width: 34em;
+}
+
+.how-step {
+  display: grid;
+  grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+  gap: clamp(14px, 3vw, 28px);
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+}
+
+.how-step svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.how h3 {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin-bottom: 6px;
+}
+
+.how-step p {
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.how-note {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+/* ---------- portrait: the sheet on top, the column underneath ---------- */
+
+@media (max-aspect-ratio: 1/1), (max-width: 760px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: "bar" "sheet" "side";
+  }
+
+  .bar {
+    padding: calc(6px + var(--safe-top)) var(--gutter) 0;
+  }
+
+  body[data-phase="draw"] .wordmark,
+  body[data-phase="visit"] .wordmark {
+    visibility: visible;
+  }
+
+  .sheet {
+    margin: 6px var(--gutter) 10px;
+  }
+
+  .side {
+    padding: 0 var(--gutter) calc(12px + var(--safe-bottom));
+    height: clamp(236px, 37vh, 300px);
+  }
+
+  .pane {
+    padding-top: 0;
+    gap: 10px;
+  }
+
+  .title {
+    display: none;
+  }
+
+  .lede {
+    padding-top: 10px;
+    font-size: 15px;
+    max-width: none;
+  }
+
+  .pick-row {
+    gap: 8px;
+  }
+
+  .pick svg {
+    aspect-ratio: 1.5;
+  }
+
+  .picks {
+    margin-top: 0;
+  }
+
+  .credit {
+    margin-top: auto;
+    flex-direction: row;
+    justify-content: space-between;
+    padding-top: 8px;
+    font-size: 12px;
+  }
+
+  .credit .link {
+    font-size: 12px;
+  }
+
+  /* Learning, compact: number and controls on one line, the two pictures side by side. */
+  .pane-learn {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: "gen gen" "chart brain" "controls controls";
+    gap: 8px 14px;
+    padding-top: 8px;
+    border-top: 1px solid var(--ink);
+  }
+
+  .pane-learn .gen {
+    grid-area: gen;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .pane-learn .gen .label {
+    order: 2;
+  }
+
+  .pane-learn .gen-number,
+  .pane-race .gen-number {
+    font-size: 40px;
+    line-height: 1;
+  }
+
+  .gen-status {
+    order: 3;
+    margin: 0 0 0 auto;
+    min-height: 0;
+    font-size: 13px;
+    text-align: right;
+  }
+
+  .fig {
+    padding-top: 8px;
+    gap: 4px;
+  }
+
+  .fig-chart {
+    grid-area: chart;
+  }
+
+  .fig-brain {
+    grid-area: brain;
+  }
+
+  .fig-chart canvas,
+  .fig-brain canvas {
+    flex: 1 1 0;
+    height: 0;
+    min-height: 54px;
+    max-height: none;
+  }
+
+  .fig figcaption {
+    font-size: 11.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .controls {
+    grid-area: controls;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px 16px;
+    padding-top: 8px;
+  }
+
+  .speed {
+    gap: 16px;
+  }
+
+  .speed::before {
+    display: none;
+  }
+
+  .controls .btn {
+    padding: 11px 12px;
+    font-size: 15px;
+  }
+
+  .controls .links {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+  }
+
+  .pane-race {
+    padding-top: 8px;
+    border-top: 1px solid var(--ink);
+    gap: 8px;
+  }
+
+  .pane-race .gen {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .times th,
+  .times td {
+    padding: 6px 0;
+  }
+
+  .pane-visit {
+    padding-top: 0;
+  }
+
+  .how-step {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .how-step svg {
+    max-width: 240px;
+  }
+}
+
+@media (max-height: 560px) and (min-aspect-ratio: 1/1) {
+  .fig-chart canvas {
+    height: 54px;
+  }
+
+  .gen-number {
+    font-size: 54px;
+  }
+
+  .title {
+    font-size: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .veil,
+  .card,
+  .how {
+    animation: none;
+  }
+}

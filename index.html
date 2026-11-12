@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <title>Rookie: draw a track, watch fifty cars learn to drive it</title>
+    <meta name="description" content="Draw a race track with your finger. Fifty cars learn to drive it from nothing, live on your device, in about a minute. Then race the one you trained." />
+    <meta name="theme-color" content="#f2eee5" />
+    <meta property="og:title" content="Rookie" />
+    <meta property="og:description" content="Draw a race track. Fifty cars learn to drive it in front of you. Then race the one you trained." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://pratyushshivam.github.io/rookie/og.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body data-phase="draw">
+    <canvas id="stage" aria-label="The sheet of paper. Drag to draw a race track."></canvas>
+
+    <div class="layout">
+      <header class="bar">
+        <button class="wordmark" id="home" type="button" aria-label="Rookie. Start again">Rookie</button>
+        <button class="icon-btn" id="mute" type="button" aria-pressed="false" aria-label="Mute sound">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z" fill="currentColor" />
+            <path class="waves" d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            <path class="cross" d="M16 9.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+        </button>
+      </header>
+
+      <div class="sheet" id="slot">
+        <p class="prompt" id="prompt" aria-live="polite">Draw a loop</p>
+        <p class="count" id="count" hidden></p>
+        <p class="toast" id="toast" hidden></p>
+        <canvas class="minimap" id="minimap" hidden aria-hidden="true"></canvas>
+        <div class="steer" id="steer" hidden aria-hidden="true">
+          <span class="steer-key steer-left">
+            <svg viewBox="0 0 24 24" width="26" height="26"><path d="M14.5 5.5 8 12l6.5 6.500" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          </span>
+          <span class="steer-key steer-right">
+            <svg viewBox="0 0 24 24" width="26" height="26"><path d="M9.500 5.500 16 12l-6.500 6.500" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          </span>
+        </div>
+      </div>
+
+      <aside class="side">
+        <!-- Draw -->
+        <section class="pane pane-draw" id="pane-draw">
+          <h1 class="title">Rookie</h1>
+          <p class="lede">Draw a race track. Fifty cars learn to drive it while you watch. Then you race the best one.</p>
+          <div class="picks">
+            <p class="label">Or start from one of these</p>
+            <div class="pick-row" id="picks"></div>
+          </div>
+          <p class="credit">
+            <button class="link" type="button" data-how>How it learns</button>
+            <span>A small experiment by <a href="https://pratyushshivam.com" rel="noopener">Pratyush Shivam</a></span>
+          </p>
+        </section>
+
+        <!-- Learn -->
+        <section class="pane pane-learn" id="pane-learn" hidden>
+          <div class="gen">
+            <p class="label">Generation</p>
+            <p class="gen-number" id="gen">1</p>
+            <p class="gen-status" id="status" aria-live="polite"></p>
+          </div>
+          <figure class="fig fig-chart">
+            <canvas id="chart" aria-label="Chart: how far the best car got in each generation"></canvas>
+            <figcaption>Best distance, by generation</figcaption>
+          </figure>
+          <figure class="fig fig-brain">
+            <canvas id="brain" aria-label="The leading car's network, live"></canvas>
+            <figcaption id="brain-caption">The leader’s brain, live</figcaption>
+          </figure>
+          <div class="controls">
+            <div class="speed" role="group" aria-label="Speed">
+              <button type="button" data-speed="1" aria-pressed="true">1×</button>
+              <button type="button" data-speed="4" aria-pressed="false">4×</button>
+              <button type="button" data-speed="0" aria-pressed="false">Max</button>
+            </div>
+            <button class="btn" id="race" type="button" disabled>Race your rookie</button>
+            <p class="links">
+              <button class="link" id="redraw" type="button">New track</button>
+              <button class="link" type="button" data-how>How it learns</button>
+            </p>
+          </div>
+        </section>
+
+        <!-- A rookie that arrived in a link -->
+        <section class="pane pane-visit" id="pane-visit" hidden>
+          <h1 class="title">Rookie</h1>
+          <p class="lede" id="visit-text"></p>
+          <div class="stack">
+            <button class="btn" id="visit-race" type="button">Race it</button>
+            <button class="btn btn-quiet" id="visit-train" type="button">Train your own on this track</button>
+            <p class="links">
+              <button class="link" id="visit-draw" type="button">Draw a new track</button>
+              <button class="link" type="button" data-how>How it learns</button>
+            </p>
+          </div>
+        </section>
+
+        <!-- Race -->
+        <section class="pane pane-race" id="pane-race" hidden>
+          <div class="gen">
+            <p class="label">Lap</p>
+            <p class="gen-number"><span id="lap">1</span><span class="of">/3</span></p>
+            <p class="gen-status" id="gap" aria-live="off"></p>
+          </div>
+          <table class="times" aria-label="Lap times">
+            <thead>
+              <tr><th></th><th>1</th><th>2</th><th>3</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+              <tr class="row-you"><th><i></i>You</th><td id="you-1">–</td><td id="you-2">–</td><td id="you-3">–</td><td id="you-t">–</td></tr>
+              <tr class="row-rookie"><th><i></i>Rookie</th><td id="ai-1">–</td><td id="ai-2">–</td><td id="ai-3">–</td><td id="ai-t">–</td></tr>
+            </tbody>
+          </table>
+          <p class="help" id="race-help"></p>
+          <p class="links">
+            <button class="link" id="race-quit" type="button">Back to training</button>
+          </p>
+        </section>
+      </aside>
+    </div>
+
+    <!-- Result -->
+    <section class="veil" id="result" hidden>
+      <div class="card" role="dialog" aria-label="Race result">
+        <p class="label" id="result-kicker"></p>
+        <p class="card-head" id="result-head"></p>
+        <p class="card-sub" id="result-sub"></p>
+        <dl class="card-stats">
+          <div><dt>Your best lap</dt><dd id="result-you"></dd></div>
+          <div><dt>Rookie’s best lap</dt><dd id="result-ai"></dd></div>
+          <div><dt>Trained for</dt><dd id="result-gen"></dd></div>
+        </dl>
+        <div class="card-actions">
+          <button class="btn" id="again" type="button">Race again</button>
+          <button class="btn btn-quiet" id="share" type="button">Share</button>
+        </div>
+        <p class="links">
+          <button class="link" id="train-more" type="button">Train it longer</button>
+          <button class="link" id="save-card" type="button">Save picture</button>
+          <button class="link" id="new-track" type="button">New track</button>
+        </p>
+      </div>
+    </section>
+
+    <!-- How it learns -->
+    <section class="veil" id="how" hidden>
+      <div class="how" role="dialog" aria-label="How it learns" tabindex="-1">
+        <button class="icon-btn how-close" id="how-close" type="button" aria-label="Close">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg>
+        </button>
+        <h2>How it learns</h2>
+        <p class="how-lede">Nobody tells a car how to drive. Nothing was trained beforehand. Each car has a tiny brain full of random numbers, and the only thing that ever happens is: drive, keep the best, vary them, drive again.</p>
+
+        <div class="how-step">
+          <svg viewBox="0 0 220 130" aria-hidden="true">
+            <path d="M10 104C40 60 80 22 150 18s60 30 60 30" fill="none" stroke="#15140f" stroke-width="1.4" />
+            <path d="M52 128c24-34 54-62 104-66s50 20 54 28" fill="none" stroke="#15140f" stroke-width="1.4" />
+            <g stroke="#d4491a" stroke-width="1" stroke-linecap="round">
+              <path d="M84 84 62 60" /><path d="M84 84l-2-36" /><path d="M84 84l20-52" /><path d="M84 84l52-64" /><path d="M84 84l88-22" /><path d="M84 84l52 4" /><path d="M84 84l22 26" />
+            </g>
+            <g fill="#d4491a"><circle cx="62" cy="60" r="2" /><circle cx="82" cy="48" r="2" /><circle cx="104" cy="32" r="2" /><circle cx="136" cy="20" r="2" /><circle cx="172" cy="62" r="2" /><circle cx="136" cy="88" r="2" /><circle cx="106" cy="110" r="2" /></g>
+            <rect x="72" y="78" width="24" height="12" rx="4" fill="#d4491a" transform="rotate(-50 84 84)" />
+          </svg>
+          <div>
+            <h3>1. What a car senses</h3>
+            <p>Seven distances to the wall, like feelers fanned out in front of it, and its own speed. Eight numbers. It is never shown the track, and it does not know where it is.</p>
+          </div>
+        </div>
+
+        <div class="how-step">
+          <svg viewBox="0 0 220 130" aria-hidden="true" id="how-net"></svg>
+          <div>
+            <h3>2. What the brain is</h3>
+            <p>A network of 16 neurons joined by 68 numbers called weights. The eight sensed numbers go in on the left. Each neuron adds up what reaches it, every input multiplied by the weight on its line, and passes the result on. Two numbers come out: how much to steer, and how hard to press the pedal. Sixty times a second.</p>
+          </div>
+        </div>
+
+        <div class="how-step">
+          <svg viewBox="0 0 220 130" aria-hidden="true" id="how-breed"></svg>
+          <div>
+            <h3>3. How a generation is bred</h3>
+            <p>Fifty cars drive, each with different weights. They are ranked by how far they got. The best four go through unchanged. Every other seat is filled by picking good drivers, mixing the weights of two of them, and nudging a few at random. Most nudges make a car worse. Some make it better, and those are the ones that get kept.</p>
+          </div>
+        </div>
+
+        <p class="how-note">When progress stalls the nudges get bigger and a few complete newcomers join. Driving backwards, spinning on the spot or crawling scores nothing. This is called neuroevolution. It runs entirely on this device: nothing is downloaded, nothing is sent, and the code is <a href="https://github.com/pratyushshivam/rookie" rel="noopener">open</a>.</p>
+      </div>
+    </section>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
