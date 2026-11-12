@@ -593,8 +593,9 @@ async function share(button: HTMLButtonElement): Promise<void> {
     }
     await navigator.clipboard.writeText(text);
     button.textContent = "Copied, with the link";
-  } catch {
-    // The share sheet was closed, or the clipboard is not allowed: put the link in the address bar instead.
+  } catch (err) {
+    if ((err as Error)?.name === "AbortError") return; // the share sheet was closed
+    // Sharing or the clipboard is not allowed here: put the link in the address bar instead.
     history.replaceState(null, "", url);
     button.textContent = "Link is in the address bar";
   }
