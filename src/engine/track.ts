@@ -323,6 +323,17 @@ function smooth(p: Pt[], passes: number, amount = 0.5): Pt[] {
   return cur;
 }
 
+/** The same for a line with two ends, which stay where they are. */
+function smoothOpen(p: Pt[], passes: number): Pt[] {
+  let cur = p;
+  for (let pass = 0; pass < passes; pass++) {
+    cur = cur.map((b, i) =>
+      i === 0 || i === cur.length - 1 ? b : { x: (cur[i - 1].x + 2 * b.x + cur[i + 1].x) / 4, y: (cur[i - 1].y + 2 * b.y + cur[i + 1].y) / 4 },
+    );
+  }
+  return cur;
+}
+
 function crosses(a: Pt, b: Pt, c: Pt, d: Pt): boolean {
   const o = (p: Pt, q: Pt, r: Pt): number => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
   const d1 = o(c, d, a);
@@ -333,38 +344,51 @@ function crosses(a: Pt, b: Pt, c: Pt, d: Pt): boolean {
 }
 
 /**
- * A drawn line often overshoots its own start or crosses itself. Keep the
- * biggest piece of it that makes one simple loop.
+ * A drawn loop often runs on past its own start, alongside the first part of
+ * the line. Cut the end off where it comes closest to the start.
  */
-function takeLoop(p: Pt[]): Pt[] {
+function trimOvershoot(p: Pt[]): Pt[] {
   const n = p.length;
-  const hits: [number, number][] = [];
-  for (let i = 0; i < n - 3; i++) {
-    for (let j = i + 2; j < n - 1; j++) {
-      if (crosses(p[i], p[i + 1], p[j], p[j + 1])) hits.push([i, j]);
+  let best = n - 1;
+  let bestD = dist(p[0], p[n - 1]);
+  for (let j = Math.floor(n * 0.6); j < n - 1; j++) {
+    const d = dist(p[0], p[j]);
+    if (d < bestD - 4) {
+      bestD = d;
+      best = j;
     }
   }
-  if (hits.length === 0) return p;
-  const endsMeet = dist(p[0], p[n - 1]) < 3 * HALF_WIDTH;
-  let best: Pt[] | null = null;
-  let bestSize = -1;
-  for (const [i, j] of hits) {
-    // The loop closed by this crossing is simple if no other crossing lies wholly inside it.
-    const inner = hits.some(([a, b]) => (a !== i || b !== j) && a >= i && b <= j);
-    if (!inner && j - i > bestSize) {
-      bestSize = j - i;
-      best = p.slice(i + 1, j + 1);
+  return bestD < 2.5 * HALF_WIDTH ? p.slice(0, best + 1) : p;
+}
+
+/**
+ * A closed line that crosses itself is two loops joined at the crossing. Keep
+ * the longer one, and repeat until what is left is one simple loop.
+ */
+function takeLoop(input: Pt[]): Pt[] {
+  let p = input;
+  // Two passes this close together along the line are a wobble of the hand,
+  // not a loop; smoothing removes those.
+  const apart = Math.ceil(200 / 6);
+  for (let round = 0; round < 8; round++) {
+    const n = p.length;
+    let cut: [number, number] | null = null;
+    search: for (let i = 0; i < n; i++) {
+      for (let j = i + apart; j < n; j++) {
+        if (n - (j - i) < apart) break;
+        if (crosses(p[i], p[(i + 1) % n], p[j], p[(j + 1) % n])) {
+          cut = [i, j];
+          break search;
+        }
+      }
     }
-    // The rest of the line (end joined back to start) is the other candidate.
-    const outer = hits.some(([a, b]) => (a !== i || b !== j) && (b <= i || a >= j || (a <= i && b >= j)));
-    if (endsMeet && !outer && n - (j - i) > bestSize) {
-      bestSize = n - (j - i);
-      best = [...p.slice(j + 1), ...p.slice(0, i + 1)];
-    }
+    if (!cut) break;
+    const [i, j] = cut;
+    const inner = p.slice(i + 1, j + 1);
+    const outer = [...p.slice(j + 1), ...p.slice(0, i + 1)];
+    p = pathLength(inner, true) >= pathLength(outer, true) ? inner : outer;
   }
-  if (best) return best;
-  const [i, j] = hits.reduce((m, hgt) => (hgt[1] - hgt[0] > m[1] - m[0] ? hgt : m));
-  return p.slice(i + 1, j + 1);
+  return p;
 }
 
 function area(p: Pt[]): number {
@@ -506,7 +530,7 @@ export function trackFromStroke(stroke: Pt[], w: number, h: number): StrokeResul
   const fail = (kind: Fault["kind"], at: Pt = first): StrokeResult => ({ ok: false, fault: { kind, x: at.x, y: at.y } });
   if (stroke.length < 3 || pathLength(stroke, false) < 140) return fail("short");
 
-  let loop = takeLoop(resample(stroke, false, 6));
+  let loop = takeLoop(resample(trimOvershoot(smoothOpen(resample(stroke, false, 6), 4)), true, 6));
   if (loop.length < 12) return fail("short");
   loop = smooth(resample(loop, true, 8), 10);
 

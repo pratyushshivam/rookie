@@ -62,5 +62,5 @@ export const STALL_TIME = 1.6;
 /** A car this far behind the line is driving the wrong way. */
 export const WRONG_WAY = 30;
 /** The sweeper: a car must average at least this speed, after a head start. */
-export const PACE = 55;
+export const PACE = 120;
 export const PACE_SLACK = 170;

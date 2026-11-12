@@ -8,3 +8,5 @@ export * from "./net";
 export * from "./evolve";
 export * from "./trainer";
 export * from "./presets";
+export * from "./race";
+export * from "./codec";
