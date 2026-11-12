@@ -3,7 +3,7 @@
  * driving: the body turns where the wheels point, the tyres can only pull it
  * sideways so hard, and past that it slides.
  */
-import { BRAKE, DRAG, DT, ENGINE, GRIP, MAX_SPEED, OVERSTEER, STEER_RATE, TURN_RADIUS } from "./config";
+import { BRAKE, CRAWL, DRAG, DT, ENGINE, GRIP, MAX_SPEED, OVERSTEER, STEER_RATE, TURN_RADIUS } from "./config";
 
 export interface Car {
   x: number;
@@ -27,7 +27,7 @@ export function makeCar(x: number, y: number, heading: number): Car {
 /**
  * One fixed step. `steerCmd` is -1 .. 1. `pedal` is -1 .. 1: above -0.3 it is
  * the accelerator, below it the brake, so a foot resting in the middle still
- * rolls the car forward.
+ * rolls the car forward. The brake slows the car to a crawl but never stops it.
  */
 export function stepCar(car: Car, steerCmd: number, pedal: number): void {
   const want = steerCmd < -1 ? -1 : steerCmd > 1 ? 1 : steerCmd;
@@ -51,8 +51,15 @@ export function stepCar(car: Car, steerCmd: number, pedal: number): void {
   if (p > -0.3) {
     along += ((p + 0.3) / 1.3) * ENGINE * (1 - along / MAX_SPEED) * DT;
   } else {
-    along -= ((-0.3 - p) / 0.7) * BRAKE * DT;
-    if (along < 0) along = 0;
+    // Like an automatic gearbox, the car creeps forward even with the brake on:
+    // braking slows it to a crawl, never to a stop.
+    if (along > CRAWL) {
+      along -= ((-0.3 - p) / 0.7) * BRAKE * DT;
+      if (along < CRAWL) along = CRAWL;
+    } else {
+      along += ENGINE * 0.5 * DT;
+      if (along > CRAWL) along = CRAWL;
+    }
   }
   along -= along * DRAG * DT;
 

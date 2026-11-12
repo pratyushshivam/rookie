@@ -33,6 +33,8 @@ export const MAX_SPEED = 300;
 export const ENGINE = 300;
 export const BRAKE = 560;
 export const DRAG = 0.12;
+/** The slowest the brake can make the car go. */
+export const CRAWL = 42;
 /** Sideways acceleration the tyres can hold before the car slides. */
 export const GRIP = 640;
 /** Tightest circle the car can turn at walking pace. */

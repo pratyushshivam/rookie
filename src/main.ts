@@ -383,7 +383,7 @@ function makeRookie(genome: Float32Array, generations: number, lap: number): Non
   // Keep the last part of its drive: one flying lap, as the line to show in the race.
   const from = Math.floor((run.path.length / 2) * 0.62) * 2;
   const best = run.lapTimes.length ? Math.min(...run.lapTimes) : lap;
-  return { genome: genome.slice(), generations, bestLap: lap > 0 ? Math.min(lap, best) : best, line: run.path.slice(from) };
+  return { genome: genome.slice(), generations, bestLap: run.lapTimes.length ? best : lap, line: run.path.slice(from) };
 }
 
 // ---------- racing ----------
@@ -741,7 +741,7 @@ function render(): void {
 
     for (const w of wrecks) {
       const age = now - w.at;
-      if (age < 1.5) stage.car(w.x, w.y, w.heading, INK, 0.5 * (1 - age / 1.5), 1.12, true);
+      if (age < 2.4) stage.car(w.x, w.y, w.heading, INK, 0.55 * (1 - age / 2.4), 1.12, true);
     }
 
     if (phase === "learn" && trainer && !resting) {

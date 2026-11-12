@@ -10,7 +10,7 @@ import { pointAt, type Track } from "./track";
 /** How long a car that touched the wall waits before it is put back on the road. */
 export const RESET_TIME = 0.8;
 /** The visitor's speed is looked after for them: this share of the careful driver's speed. */
-export const AID = 0.9;
+export const AID = 0.94;
 
 export interface RaceInput {
   /** -1 left, 1 right, 0 straight. */

@@ -198,7 +198,7 @@ export function drawBrain(canvas: HTMLCanvasElement, weights: Float32Array | nul
 export function howDiagrams(net: SVGElement | null, breedSvg: SVGElement | null): void {
   if (net) {
     const xs = [34, 110, 186];
-    const pos = (l: number, i: number): [number, number] => [xs[l], 65 + (i - (LAYERS[l] - 1) / 2) * (l === 0 ? 14.5 : 18)];
+    const pos = (l: number, i: number): [number, number] => [xs[l], 58 + (i - (LAYERS[l] - 1) / 2) * (l === 0 ? 14 : 18)];
     let s = "";
     let seed = 7;
     const rand = (): number => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 2 - 1;
@@ -218,7 +218,7 @@ export function howDiagrams(net: SVGElement | null, breedSvg: SVGElement | null)
         s += `<circle cx="${x}" cy="${y}" r="4.6" fill="#f8f5ee" stroke="#15140f" stroke-width="1.1"/>`;
       }
     }
-    s += `<g font-family="Geist, sans-serif" font-size="9" fill="rgba(21,20,15,0.62)"><text x="34" y="127" text-anchor="middle">8 in</text><text x="110" y="127" text-anchor="middle">6 hidden</text><text x="186" y="127" text-anchor="middle">2 out</text></g>`;
+    s += `<g font-family="Geist, sans-serif" font-size="9" fill="rgba(21,20,15,0.62)"><text x="34" y="129" text-anchor="middle">8 in</text><text x="110" y="129" text-anchor="middle">6 hidden</text><text x="186" y="129" text-anchor="middle">2 out</text></g>`;
     net.innerHTML = s;
   }
   if (breedSvg) {
@@ -236,7 +236,7 @@ export function howDiagrams(net: SVGElement | null, breedSvg: SVGElement | null)
     // The four that go straight through, and two parents making one child.
     for (let i = 0; i < 4; i++) s += `<path d="M${col(i)} 27V91" stroke="#d4491a" stroke-width="1"/>`;
     s += `<path d="M${col(7)} 27C${col(7)} 60 ${col(14)} 56 ${col(14)} 91M${col(19)} 27C${col(19)} 60 ${col(14)} 56 ${col(14)} 91" fill="none" stroke="#15140f" stroke-width="1"/>`;
-    s += `<g font-family="Geist, sans-serif" font-size="9" fill="rgba(21,20,15,0.62)"><text x="11" y="10">ranked by distance</text><text x="11" y="124">next generation</text><text x="${col(15) + 2}" y="66">mix two, nudge</text><text x="${col(4) + 1}" y="66" fill="#d4491a">kept</text></g>`;
+    s += `<g font-family="Geist, sans-serif" font-size="9" fill="rgba(21,20,15,0.62)"><text x="11" y="10">ranked by distance</text><text x="11" y="124">next generation</text><text x="${col(15) + 4}" y="84">mix two, nudge</text><text x="${col(4) + 1}" y="62" fill="#d4491a">kept as they are</text></g>`;
     breedSvg.innerHTML = s;
   }
 }
