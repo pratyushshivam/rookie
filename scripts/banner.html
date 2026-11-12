@@ -1,0 +1,97 @@
+<!doctype html>
+<!--
+  The README banner and the social card, drawn with the page's own engine and renderer:
+  a real training run on a real drawn track, stopped part of the way through a generation.
+  Open through the dev server:  http://localhost:5240/scripts/banner.html      (banner, 1280 x 480)
+                                http://localhost:5240/scripts/banner.html?og   (social card, 1200 x 630)
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Rookie banner</title>
+    <link rel="stylesheet" href="../src/styles.css" />
+    <style>
+      html, body { overflow: hidden; }
+      .page { position: fixed; inset: 0; display: grid; grid-template-columns: 44fr 56fr; align-items: center; gap: 48px; padding: 40px 44px 40px 68px; }
+      .words h1 { margin: 0; white-space: nowrap; font-size: 124px; font-weight: 600; line-height: 0.9; letter-spacing: -0.055em; }
+      .words h1::after { content: ""; display: inline-block; width: 0.13em; height: 0.13em; margin-left: 0.05em; border-radius: 50%; background: var(--accent); }
+      .words p { margin: 26px 0 0; padding-top: 22px; border-top: 1px solid var(--ink); font-size: 26px; line-height: 1.28; letter-spacing: -0.012em; max-width: 17em; }
+      .words small { display: block; margin-top: 16px; font-size: 17px; color: var(--ink-soft); }
+      #box { height: 100%; }
+      body.og .page { grid-template-columns: 40fr 60fr; padding: 48px 48px 48px 60px; gap: 40px; }
+      body.og .words h1 { font-size: 112px; }
+      body.og .words p { font-size: 25px; }
+    </style>
+  </head>
+  <body>
+    <canvas id="stage"></canvas>
+    <div class="page">
+      <div class="words">
+        <h1>Rookie</h1>
+        <p>Draw a race track. Fifty cars learn to drive it in front of you. Then race the one you trained.<small>Real learning, live in the browser, written from scratch.</small></p>
+      </div>
+      <div id="box"></div>
+    </div>
+    <script type="module">
+      import { Rng, Trainer, WORLD_AREA, paperFor, randomStroke, trackFromStroke } from "../src/engine/index.ts";
+      import { ACCENT, INK, Stage, trackArt } from "../src/game/stage.ts";
+
+      const og = location.search.includes("og");
+      document.body.classList.toggle("og", og);
+      const r = document.getElementById("box").getBoundingClientRect();
+      const box = { x: r.left, y: r.top, w: r.width, h: r.height };
+      const paper = paperFor(box.w / box.h, WORLD_AREA);
+      let made;
+      for (let seed = 31; ; seed++) {
+        made = trackFromStroke(randomStroke(new Rng(seed), paper.w, paper.h), paper.w, paper.h);
+        if (made.ok) break;
+      }
+      const track = made.track;
+      const stage = new Stage(document.getElementById("stage"));
+      await document.fonts.ready;
+      stage.resize();
+      stage.setPaper(track.w, track.h);
+      stage.cam = stage.fit(box);
+
+      // Train until one car can lap, leaving marks exactly as the page does, then stop mid-generation.
+      const trainer = new Trainer(track, 12);
+      const px = [];
+      const py = [];
+      let valid = false;
+      let tick = 0;
+      let stopAt = Infinity;
+      for (let step = 0; step < 400000; step++) {
+        const ev = trainer.step();
+        if (ev.bred) valid = false;
+        else if (++tick % 3 === 0) {
+          const segs = [];
+          trainer.drivers.forEach((d, k) => {
+            if (!d.alive) return;
+            if (valid && d.car.speed > 8) segs.push(px[k], py[k], d.car.x, d.car.y, d.car.heading, Math.abs(d.car.slip) > 22 ? 2 : 1);
+            px[k] = d.car.x;
+            py[k] = d.car.y;
+          });
+          valid = true;
+          stage.addMarks(segs);
+        }
+        if (trainer.firstLapGeneration && stopAt === Infinity) stopAt = trainer.generation + 2;
+        if (trainer.generation === stopAt && trainer.time > 4.6) break;
+      }
+
+      const art = trackArt(track);
+      stage.begin();
+      stage.dots(art);
+      stage.track(track, art);
+      const lead = trainer.drivers[trainer.leader];
+      for (const d of trainer.drivers) {
+        if (d === lead) continue;
+        if (d.alive) stage.car(d.car.x, d.car.y, d.car.heading, INK, 0.78, 1.15);
+        else if (trainer.time - d.outAt < 2.5) stage.car(d.car.x, d.car.y, d.car.heading, INK, 0.5, 1.15, true);
+      }
+      stage.rays(lead.car, lead.act[0], ACCENT);
+      stage.car(lead.car.x, lead.car.y, lead.car.heading, ACCENT, 1, 1.25);
+      stage.end();
+      document.body.dataset.ready = "1";
+    </script>
+  </body>
+</html>
