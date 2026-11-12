@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Draw a race track. Fifty cars learn to drive it in front of you. Then race the one you trained.",
+  "homepage": "https://pratyushshivam.github.io/rookie/",
   "license": "MIT",
   "scripts": {
     "dev": "vite --port 5240",
