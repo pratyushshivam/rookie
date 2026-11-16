@@ -13,6 +13,7 @@
   <a href="#how-it-learns">How it learns</a> ·
   <a href="#the-numbers">The numbers</a> ·
   <a href="#run-it">Run it</a> ·
+  <a href="https://www.pratyushshivam.com/projects/rookie/">The full write-up</a> ·
   <a href="https://www.pratyushshivam.com/">pratyushshivam.com</a>
 </p>
 
